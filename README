@@ -1,0 +1,8 @@
+The unity project is uploaded here.  The instructions for the current functions of the inventory system are displayed when interacting with it.  Here are the controls again:
+- 1: Select blue item
+- 2: Select green item
+- 3: Select yellow item
+- 4: Select red item
+- S: Sell highlighted item from inventory
+- Right Click: Rotate current item
+- Left Click: Place current item in inventory (If it fits and you have enough currency)
