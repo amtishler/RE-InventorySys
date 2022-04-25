@@ -1,12 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class InventorySystem : MonoBehaviour
 {
     [SerializeField] private List<Item> itemList;
     private Item item;
     private InventoryGrid<CustomGridObject> grid;
+
+    public int money = 750;
+    public Text currency;
+
     private void Awake(){
         int gridWidth = 10;
         int gridHeight = 10;
@@ -23,19 +28,26 @@ public class InventorySystem : MonoBehaviour
             List<Vector2Int> gridPositionList = item.GetGridPositionList(new Vector2Int(x, y), item.rotated);
             bool occupied = false;
             foreach (Vector2Int gridPosition in gridPositionList) {
-                if (grid.GetGridObject(gridPosition.x, gridPosition.y).Occupied()) {
+                if (grid.GetGridObject(gridPosition.x, gridPosition.y) != null) {
+                    if (grid.GetGridObject(gridPosition.x, gridPosition.y).Occupied()) {
+                        occupied = true;
+                        break;
+                    }
+                } else {
                     occupied = true;
                     break;
                 }
+    
             }
 
-            if (!occupied) {
+            if (!occupied && money > item.cost) {
+                money -= item.cost;
                 Vector2Int rotationOffset = item.GetRotationOffset(item.rotated);
                 Vector3 placedObjectWorldPosition = grid.GetWorldPosition(x, y) + 
                         new Vector3(rotationOffset.x, rotationOffset.y, 0) * grid.GetCellSize();
-                Transform placedTransform = Instantiate(item.prefab, placedObjectWorldPosition, Quaternion.Euler(0, 0, item.GetRotationAngle()));
+                PlacedObject placedObject = PlacedObject.Create(placedObjectWorldPosition, new Vector2Int(x, y), item.rotated, item);
                 foreach (Vector2Int gridPosition in gridPositionList) {
-                    grid.GetGridObject(gridPosition.x, gridPosition.y).SetTransform(placedTransform);
+                    grid.GetGridObject(gridPosition.x, gridPosition.y).SetPlacedObject(placedObject);
                 }
             }
             // else {
@@ -61,6 +73,37 @@ public class InventorySystem : MonoBehaviour
                 item.rotated = true;
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.S)) {
+            CustomGridObject gridObject = grid.GetGridObject(GetMouseWorldPosition());
+            PlacedObject placedObject = gridObject.GetPlacedObject();
+            if (placedObject != null) {
+                money += placedObject.GetItem().cost;
+                placedObject.DestroyObject();
+
+                List<Vector2Int> gridPositionList = placedObject.GetGridPositionList();
+
+                foreach (Vector2Int gridPosition in gridPositionList) {
+                    grid.GetGridObject(gridPosition.x, gridPosition.y).DeletePlacedObject();
+                }
+            }
+        }
+        if (currency != null)
+            currency.text = "$" + money.ToString();
+
+        if (Input.GetKeyDown(KeyCode.Alpha1)) { 
+            item = itemList[0]; 
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2)) {
+            item = itemList[1]; 
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3)) { 
+            item = itemList[2]; 
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4)) { 
+            item = itemList[3]; 
+        }
+
     }
 
     //Modify Objects in Grid
@@ -72,7 +115,7 @@ public class InventorySystem : MonoBehaviour
         private int x;
         private int y;
         // private int value;
-        private Transform transform;
+        private PlacedObject placedObject;
 
         public CustomGridObject(InventoryGrid<CustomGridObject> grid, int x, int y) {
             this.grid = grid;
@@ -80,18 +123,22 @@ public class InventorySystem : MonoBehaviour
             this.y = y;
         }
 
-        public void SetTransform(Transform transform) {
-            this.transform = transform;
+        public void SetPlacedObject(PlacedObject placedObject) {
+            this.placedObject = placedObject;
             grid.TriggerGridObjectChanged(x, y);
         }
 
-        public void DeleteTransform() {
-            transform = null;
+        public PlacedObject GetPlacedObject() {
+            return placedObject;
+        }
+
+        public void DeletePlacedObject() {
+            placedObject = null;
             grid.TriggerGridObjectChanged(x, y);
         }
 
         public bool Occupied() {
-            return (transform != null);
+            return placedObject != null;
         }
 
         // public void AddValue(int addValue) {

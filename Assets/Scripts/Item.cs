@@ -13,6 +13,8 @@ public class Item : ScriptableObject
     public int width;
     public int height;
 
+    public int cost = 10;
+
     public int GetRotationAngle() {
         if (rotated) {
             return 270;
